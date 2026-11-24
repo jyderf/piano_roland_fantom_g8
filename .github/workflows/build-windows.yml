@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-2025
+    runs-on: windows-2025-vs2026
     timeout-minutes: 90
     steps:
       - name: Descargar el código
@@ -21,7 +21,7 @@ jobs:
 
       - name: Compilar Standalone y VST3 y ejecutar pruebas
         shell: pwsh
-        run: .\build-windows.ps1 -Generator "Visual Studio 17 2022"
+        run: .\build-windows.ps1 -Generator "Visual Studio 18 2026"
 
       - name: Crear instalador
         shell: pwsh

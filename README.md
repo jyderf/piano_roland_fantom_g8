@@ -63,7 +63,7 @@ plugin integrado en Pro Tools.
 ### Compilar en GitHub sin instalar herramientas de desarrollo
 
 El flujo [`.github/workflows/build-windows.yml`](.github/workflows/build-windows.yml)
-usa un equipo Windows de GitHub Actions con Visual Studio 2022, CMake e Inno
+usa un equipo Windows de GitHub Actions con Visual Studio 2026, CMake e Inno
 Setup. En el repositorio de GitHub, abre **Actions > Compilar Aurea Piano para
 Windows > Run workflow**. Si la compilación y las pruebas terminan bien, descarga
 el archivo `AureaPiano-0.1.0-win64-setup` desde **Artifacts**; dentro estará el
