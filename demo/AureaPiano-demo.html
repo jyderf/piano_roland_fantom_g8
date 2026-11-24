@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurea Piano — demo para escuchar</title>
+<style>
+  :root { color-scheme: dark; --bg:#10151d; --panel:#1c2633; --line:#334254; --gold:#d9b46e; --ink:#f1f2f2; --muted:#aab6c4; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:radial-gradient(ellipse at top,#273649 0,#10151d 65%); color:var(--ink); font:15px/1.45 system-ui,Segoe UI,sans-serif; }
+  main { width:min(1200px,calc(100% - 32px)); margin:24px auto 220px; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:14px; }
+  h1 { margin:0; font-size:31px; letter-spacing:.12em; font-weight:700; color:var(--gold); }
+  h2 { margin:0 0 16px; font-size:16px; color:var(--gold); letter-spacing:.09em; }
+  p { margin:4px 0; }
+  .sub,.hint { color:var(--muted); }
+  .tag { display:inline-block; padding:3px 8px; border:1px solid var(--line); border-radius:100px; font-size:12px; color:var(--muted); margin-top:5px; }
+  button,select,input[type=number] { font:inherit; color:var(--ink); background:#263344; border:1px solid #4a5a6b; border-radius:8px; padding:9px 11px; }
+  button { cursor:pointer; }
+  button:hover { border-color:var(--gold); }
+  button.primary { background:var(--gold); color:#131923; border-color:var(--gold); font-weight:700; padding:12px 18px; }
+  button.primary:hover { background:#f1cf8e; }
+  button:disabled { opacity:.45; cursor:default; }
+  .buttons { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .status { padding:10px 14px; background:#142131; border-left:3px solid var(--gold); border-radius:5px; color:var(--muted); margin-bottom:16px; }
+  section { background:rgba(28,38,51,.95); border:1px solid var(--line); border-radius:14px; margin:13px 0; padding:19px; box-shadow:0 12px 35px #0002; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:16px; }
+  .control { min-width:0; }
+  .control label { display:flex; justify-content:space-between; gap:8px; color:var(--muted); font-size:13px; margin-bottom:7px; }
+  .control output { color:var(--ink); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .control input[type=range] { width:100%; height:24px; margin:0; accent-color:var(--gold); cursor:pointer; }
+  .control select,.control input[type=number] { width:100%; }
+  .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .row label { color:var(--muted); }
+  .row select { min-width:175px; }
+  .small { font-size:12px; }
+  .footer { position:fixed; left:0; right:0; bottom:0; z-index:5; padding:12px max(16px,calc((100vw - 1200px)/2)); background:#0d131bf5; border-top:1px solid #435166; box-shadow:0 -12px 30px #0007; }
+  .footer-top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .footer-top span { color:var(--muted); font-size:13px; }
+  .keys { position:relative; display:flex; width:100%; height:116px; overflow:hidden; border-radius:6px; background:#05070a; touch-action:none; user-select:none; }
+  .white-key { position:relative; flex:1; height:100%; border:1px solid #76808b; border-radius:0 0 5px 5px; background:linear-gradient(#f9faf7,#d8d9d5); color:#51606a; display:flex; align-items:flex-end; justify-content:center; padding-bottom:5px; font-size:11px; cursor:pointer; }
+  .black-key { position:absolute; z-index:2; top:0; width:4.6%; height:66%; border:1px solid #000; border-radius:0 0 4px 4px; background:linear-gradient(#313943,#080c11); cursor:pointer; box-shadow:2px 3px 5px #0007; }
+  .white-key.down { background:linear-gradient(#ebd19d,#b48442); }
+  .black-key.down { background:linear-gradient(#b6935e,#50391e); }
+  @media(max-width:750px) { header { flex-direction:column; align-items:flex-start; } .buttons { justify-content:flex-start; } main { margin-bottom:210px; } .keys { height:95px; } .footer-top span { display:none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>AUREA PIANO</h1><p class="sub">Demostración local de modelado modal</p><span class="tag">Vista previa · no es el plugin VST3/AAX</span></div>
+    <div class="buttons"><button id="start" class="primary">Activar audio</button><button id="dryTest" aria-pressed="false">Probar seco / sin pedal</button><button id="midi">Conectar MIDI</button><button id="panic">Apagar notas</button></div>
+  </header>
+  <div id="status" class="status" role="status">Da clic en «Activar audio» y toca el teclado de abajo con el ratón o con A W S E D F T G Y H U J K O L P.</div>
+
+  <section>
+    <h2>PIANO PRINCIPAL</h2>
+    <div class="row"><label for="pianoPreset">Carácter inicial</label><select id="pianoPreset"><option value="">Personalizado</option><option value="concert">Concierto</option><option value="warm">Cálido</option><option value="pop">Pop</option><option value="ballad">Balada</option></select></div>
+    <div class="grid">
+      <div class="control"><label for="aZone">Zona</label><select id="aZone"><option value="all">Todo</option><option value="left">Izquierda</option><option value="right">Derecha</option><option value="off">Apagado</option></select></div>
+      <div class="control"><label for="aTranspose">Transponer <output></output></label><input id="aTranspose" type="range" min="-24" max="24" step="1" value="0"></div>
+      <div class="control"><label for="aLevel">Volumen <output></output></label><input id="aLevel" type="range" min="0" max="1" step=".01" value=".8"></div>
+      <div class="control"><label for="aBrightness">Brillo <output></output></label><input id="aBrightness" type="range" min="0" max="1" step=".01" value=".55"></div>
+      <div class="control"><label for="aAttack">Ataque <output></output></label><input id="aAttack" type="range" min=".2" max="120" step=".1" value="2"></div>
+      <div class="control"><label for="aRelease">Liberación <output></output></label><input id="aRelease" type="range" min="20" max="1800" step="1" value="250"></div>
+      <div class="control"><label for="aHardness">Martillo <output></output></label><input id="aHardness" type="range" min="0" max="1" step=".01" value=".5"></div>
+      <div class="control"><label for="aResonance">Resonancia <output></output></label><input id="aResonance" type="range" min="0" max="1" step=".01" value=".45"></div>
+      <div class="control"><label for="aWidth">Anchura <output></output></label><input id="aWidth" type="range" min="0" max="1" step=".01" value=".55"></div>
+      <div class="control"><label for="aVelocity">Curva velo. <output></output></label><input id="aVelocity" type="range" min=".5" max="2" step=".01" value="1"></div>
+      <div class="control"><label for="aTune">Afinación <output></output></label><input id="aTune" type="range" min="-50" max="50" step=".1" value="0"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>CAPA DUAL / BAJO Y DIVISIÓN</h2>
+    <div class="grid">
+      <div class="control"><label for="bZone">Zona dual</label><select id="bZone"><option value="off">Apagado</option><option value="all">Todo</option><option value="left">Izquierda</option><option value="right">Derecha</option></select></div>
+      <div class="control"><label for="bTimbre">Timbre dual</label><select id="bTimbre"><option value="piano">Piano</option><option value="bass">Bajo</option></select></div>
+      <div class="control"><label for="split">División MIDI <output></output></label><input id="split" type="range" min="21" max="108" step="1" value="60"></div>
+      <div class="control"><label for="bTranspose">Transponer <output></output></label><input id="bTranspose" type="range" min="-24" max="24" step="1" value="0"></div>
+      <div class="control"><label for="bLevel">Volumen dual <output></output></label><input id="bLevel" type="range" min="0" max="1" step=".01" value=".65"></div>
+      <div class="control"><label for="bBrightness">Brillo dual <output></output></label><input id="bBrightness" type="range" min="0" max="1" step=".01" value=".45"></div>
+      <div class="control"><label for="bAttack">Ataque dual <output></output></label><input id="bAttack" type="range" min=".2" max="120" step=".1" value="2"></div>
+      <div class="control"><label for="bRelease">Liberación dual <output></output></label><input id="bRelease" type="range" min="20" max="1800" step="1" value="280"></div>
+      <div class="control"><label for="bHardness">Martillo dual <output></output></label><input id="bHardness" type="range" min="0" max="1" step=".01" value=".5"></div>
+      <div class="control"><label for="bResonance">Resonancia dual <output></output></label><input id="bResonance" type="range" min="0" max="1" step=".01" value=".45"></div>
+      <div class="control"><label for="bWidth">Anchura dual <output></output></label><input id="bWidth" type="range" min="0" max="1" step=".01" value=".55"></div>
+      <div class="control"><label for="bVelocity">Curva velo. dual <output></output></label><input id="bVelocity" type="range" min=".5" max="2" step=".01" value="1"></div>
+      <div class="control"><label for="bTune">Afinación dual <output></output></label><input id="bTune" type="range" min="-50" max="50" step=".1" value="0"></div>
+    </div>
+    <p class="hint small">Para bajo a la izquierda: zona principal «Derecha», zona dual «Izquierda», timbre dual «Bajo».</p>
+  </section>
+
+  <section>
+    <h2>ECUALIZADOR DE CUATRO BANDAS</h2>
+    <div class="row"><label for="eqPreset">Preset de EQ</label><select id="eqPreset"><option value="">Personalizado</option><option value="flat">Plano</option><option value="warm">Cálido</option><option value="bright">Brillante</option><option value="presence">Presencia</option><option value="soft">Suave</option></select></div>
+    <div class="grid">
+      <div class="control"><label for="eqLow">90 Hz <output></output></label><input id="eqLow" type="range" min="-18" max="18" step=".1" value="0"></div>
+      <div class="control"><label for="eqLowMid">360 Hz <output></output></label><input id="eqLowMid" type="range" min="-18" max="18" step=".1" value="0"></div>
+      <div class="control"><label for="eqHighMid">2.7 kHz <output></output></label><input id="eqHighMid" type="range" min="-18" max="18" step=".1" value="0"></div>
+      <div class="control"><label for="eqHigh">8.3 kHz <output></output></label><input id="eqHigh" type="range" min="-18" max="18" step=".1" value="0"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>COMPRESOR</h2>
+    <div class="row"><label for="compPreset">Preset de compresor</label><select id="compPreset"><option value="">Personalizado</option><option value="off">Sin compresión</option><option value="natural">Natural</option><option value="pop">Pop</option><option value="stage">Escenario</option></select></div>
+    <div class="grid">
+      <div class="control"><label for="compThreshold">Umbral <output></output></label><input id="compThreshold" type="range" min="-48" max="0" step=".1" value="-18"></div>
+      <div class="control"><label for="compRatio">Relación <output></output></label><input id="compRatio" type="range" min="1" max="12" step=".1" value="2.5"></div>
+      <div class="control"><label for="compAttack">Ataque <output></output></label><input id="compAttack" type="range" min="1" max="100" step=".1" value="15"></div>
+      <div class="control"><label for="compRelease">Liberación <output></output></label><input id="compRelease" type="range" min="20" max="800" step="1" value="180"></div>
+      <div class="control"><label for="compMakeup">Ganancia <output></output></label><input id="compMakeup" type="range" min="0" max="18" step=".1" value="3"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>ESPACIO Y SALIDA</h2>
+    <p class="hint small">«Seco» regula el volumen de la señal directa. Para escuchar exclusivamente el piano sin pedal ni procesadores usa «Probar seco / sin pedal» arriba.</p>
+    <div class="row"><label><input id="sustainHold" type="checkbox"> Sustain fijo</label><span class="hint small">El pedal MIDI CC64 también funciona si tu navegador concede acceso MIDI.</span></div>
+    <div class="grid">
+      <div class="control"><label for="dry">Seco <output></output></label><input id="dry" type="range" min="0" max="1" step=".01" value="1"></div>
+      <div class="control"><label for="delayMix">Delay <output></output></label><input id="delayMix" type="range" min="0" max="1" step=".01" value="0"></div>
+      <div class="control"><label for="delayMs">Tiempo <output></output></label><input id="delayMs" type="range" min="50" max="900" step="1" value="320"></div>
+      <div class="control"><label for="delayFeedback">Feedback <output></output></label><input id="delayFeedback" type="range" min="0" max=".85" step=".01" value=".32"></div>
+      <div class="control"><label for="reverbMix">Reverb <output></output></label><input id="reverbMix" type="range" min="0" max="1" step=".01" value=".16"></div>
+      <div class="control"><label for="reverbSize">Sala <output></output></label><input id="reverbSize" type="range" min="0" max="1" step=".01" value=".55"></div>
+      <div class="control"><label for="reverbDamping">Amortiguación <output></output></label><input id="reverbDamping" type="range" min="0" max="1" step=".01" value=".5"></div>
+      <div class="control"><label for="master">Volumen maestro <output></output></label><input id="master" type="range" min="0" max="1.5" step=".01" value=".8"></div>
+    </div>
+  </section>
+  <p class="hint small">Esta demo usa el audio del navegador y un motor de prueba con la misma idea de síntesis modal. No mide ni representa el rendimiento o sonido final del VST3/AAX.</p>
+</main>
+
+<div class="footer">
+  <div class="footer-top"><div><button id="octDown">− oct</button> <button id="octUp">+ oct</button> <strong id="octText">C4</strong></div><span>Ratón o A W S E D F T G Y H U J K O L P · Haz clic fuera de los controles para tocar con letras</span></div>
+  <div id="keys" class="keys" tabindex="0" aria-label="Teclado para probar notas"></div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const sliderIds = ['aTranspose','aLevel','aBrightness','aAttack','aRelease','aHardness','aResonance','aWidth','aVelocity','aTune',
+    'bTranspose','bLevel','bBrightness','bAttack','bRelease','bHardness','bResonance','bWidth','bVelocity','bTune','split',
+    'eqLow','eqLowMid','eqHighMid','eqHigh','compThreshold','compRatio','compAttack','compRelease','compMakeup',
+    'dry','delayMix','delayMs','delayFeedback','reverbMix','reverbSize','reverbDamping','master'];
+  const param = id => Number($(id).value);
+  const setParam = (id, value) => { $(id).value = value; $(id).dispatchEvent(new Event('input')); };
+  const noteName = n => ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'][n % 12] + (Math.floor(n / 12) - 1);
+  const showStatus = message => { $('status').textContent = message; };
+  let context = null, processor = null, audio = null, midiAccess = null;
+  let voices = [], voiceSerial = 0, midiPedal = false, softPedal = false, keyBase = 60;
+  let forceDry = false, previousHold = false;
+  let board = [], pointerNotes = new Map(), keyNotes = new Map();
+  let body = [];
+  const sampleOut = {left:0,right:0};
+
+  function makeBody(frequency, sampleRate) {
+    const radius = Math.exp(-1 / (sampleRate * .65));
+    return { a1:2 * radius * Math.cos(2 * Math.PI * frequency / sampleRate), a2:-radius * radius,
+      drive:1 - radius, y1:0, y2:0 };
+  }
+  function makeImpulse(ctx) {
+    const seconds = .5 + param('reverbSize') * 2.5;
+    const length = Math.floor(ctx.sampleRate * seconds);
+    const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
+    const damping = param('reverbDamping');
+    for (let ch = 0; ch < 2; ++ch) {
+      const data = impulse.getChannelData(ch);
+      let lowpass = 0;
+      for (let i = 0; i < length; ++i) {
+        const decay = Math.exp(-6 * i / length);
+        lowpass = lowpass * (damping * .75) + (Math.random() * 2 - 1) * (1 - damping * .75);
+        data[i] = lowpass * decay * .28;
+      }
+    }
+    return impulse;
+  }
+  function applyAudioControls() {
+    if (!audio) return;
+    const eqIds = ['eqLow','eqLowMid','eqHighMid','eqHigh'];
+    audio.eq.forEach((filter, i) => { filter.gain.value = param(eqIds[i]); });
+    audio.compressor.threshold.value = param('compThreshold');
+    audio.compressor.ratio.value = param('compRatio');
+    audio.compressor.attack.value = param('compAttack') / 1000;
+    audio.compressor.release.value = param('compRelease') / 1000;
+    audio.makeup.gain.value = Math.pow(10, param('compMakeup') / 20);
+    audio.bypass.gain.value = forceDry ? 1 : 0;
+    audio.dry.gain.value = forceDry ? 0 : param('dry');
+    audio.delay.delayTime.value = param('delayMs') / 1000;
+    audio.feedback.gain.value = forceDry ? 0 : param('delayFeedback') * .7;
+    audio.delayWet.gain.value = forceDry ? 0 : param('delayMix');
+    audio.reverbWet.gain.value = forceDry ? 0 : param('reverbMix');
+    audio.master.gain.value = param('master');
+  }
+  let impulseTimer = null;
+  function scheduleImpulse() {
+    if (!audio) return;
+    clearTimeout(impulseTimer);
+    impulseTimer = setTimeout(() => { if (audio) audio.reverb.buffer = makeImpulse(context); }, 180);
+  }
+  function renderSample() {
+    let left = 0, right = 0;
+    for (const v of voices) {
+      if (!v.active) continue;
+      v.envelope += (1 - v.envelope) * v.attackStep;
+      if (!v.keyDown && !v.heldByPedal) v.envelope *= v.releaseStep;
+      const strings = [0,0,0];
+      for (let s = 0; s < 3; ++s) {
+        for (const mode of v.strings[s]) {
+          strings[s] += mode.sine * mode.gain;
+          const nextSine = mode.sine * mode.stepCosine + mode.cosine * mode.stepSine;
+          mode.cosine = mode.cosine * mode.stepCosine - mode.sine * mode.stepSine;
+          mode.sine = nextSine;
+          mode.gain *= mode.decay;
+        }
+      }
+      v.noiseState ^= v.noiseState << 13;
+      v.noiseState ^= v.noiseState >>> 17;
+      v.noiseState ^= v.noiseState << 5;
+      const noise = ((v.noiseState & 65535) / 32768 - 1) * v.noiseEnvelope;
+      v.noiseEnvelope *= .995;
+      const centre = (strings[0] + strings[1] + strings[2]) / 3 + noise;
+      const side = (strings[2] - strings[0]) * v.width * .35;
+      const scale = v.envelope * v.level * .22;
+      left += (centre - side) * scale;
+      right += (centre + side) * scale;
+      if (v.envelope < .00005 && !v.keyDown && !v.heldByPedal) v.active = false;
+    }
+    const mono = (left + right) * .5;
+    let boardSound = 0;
+    for (const mode of body) {
+      const y = mono * mode.drive + mode.a1 * mode.y1 + mode.a2 * mode.y2;
+      mode.y2 = mode.y1; mode.y1 = y; boardSound += y;
+    }
+    sampleOut.left = left + boardSound * .055;
+    sampleOut.right = right + boardSound * .055;
+  }
+  function processAudio(event) {
+    const l = event.outputBuffer.getChannelData(0);
+    const r = event.outputBuffer.getChannelData(1);
+    for (let i = 0; i < l.length; ++i) {
+      renderSample();
+      l[i] = sampleOut.left; r[i] = sampleOut.right;
+    }
+    voices = voices.filter(v => v.active);
+  }
+  async function startAudio() {
+    if (!context) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) { showStatus('Este navegador no ofrece Web Audio. Abre el archivo con Chrome o Edge.'); return; }
+      context = new AudioContextClass({latencyHint:'interactive'});
+      body = [112,224,454].map(f => makeBody(f, context.sampleRate));
+      processor = context.createScriptProcessor(512, 0, 2);
+      processor.onaudioprocess = processAudio;
+      const frequencies = [90,360,2700,8300];
+      const eq = frequencies.map(f => { const node = context.createBiquadFilter(); node.type = 'peaking'; node.frequency.value = f; node.Q.value = .8; return node; });
+      const compressor = context.createDynamicsCompressor(); compressor.knee.value = 0;
+      const makeup = context.createGain(), dry = context.createGain(), bypass = context.createGain(), delay = context.createDelay(1.2);
+      const feedback = context.createGain(), delayWet = context.createGain();
+      const reverb = context.createConvolver(), reverbWet = context.createGain(), master = context.createGain();
+      processor.connect(eq[0]); processor.connect(bypass); bypass.connect(master);
+      for (let i = 0; i < eq.length - 1; ++i) eq[i].connect(eq[i + 1]);
+      eq[eq.length - 1].connect(compressor);
+      compressor.connect(makeup);
+      makeup.connect(dry); dry.connect(master);
+      makeup.connect(delay); delay.connect(feedback); feedback.connect(delay);
+      delay.connect(delayWet); delayWet.connect(master);
+      makeup.connect(reverb); reverb.connect(reverbWet); reverbWet.connect(master);
+      master.connect(context.destination);
+      audio = {eq,compressor,makeup,dry,bypass,delay,feedback,delayWet,reverb,reverbWet,master};
+      reverb.buffer = makeImpulse(context);
+      applyAudioControls();
+    }
+    await context.resume();
+    $('start').textContent = 'Audio activo';
+    showStatus(forceDry ?
+      'Audio activo en modo seco y sin pedal. Toca una nota y suelta la tecla para oír el apagador.' :
+      'Audio activo. Toca el teclado con el ratón o las letras. El sonido sale por la salida predeterminada de Windows.');
+  }
+  function settings(prefix) {
+    return {level:param(prefix+'Level'), brightness:param(prefix+'Brightness'), attack:param(prefix+'Attack'), release:param(prefix+'Release'),
+      hardness:param(prefix+'Hardness'), resonance:param(prefix+'Resonance'), width:param(prefix+'Width'),
+      velocityCurve:param(prefix+'Velocity'), tune:param(prefix+'Tune'), transpose:param(prefix+'Transpose'),
+      zone:$(prefix+'Zone').value, bass:prefix === 'b' && $('bTimbre').value === 'bass'};
+  }
+  function inZone(note, zone) {
+    return zone === 'all' || (zone === 'left' && note < param('split')) || (zone === 'right' && note >= param('split'));
+  }
+  function startLayer(sourceNote, velocity, p) {
+    if (p.zone === 'off' || !inZone(sourceNote, p.zone) || !context) return;
+    if (voices.length >= 40) voices.shift();
+    const midiNote = Math.max(21, Math.min(108, sourceNote + p.transpose));
+    const sampleRate = context.sampleRate;
+    const base = 440 * Math.pow(2, (midiNote - 69) / 12 + p.tune / 1200);
+    const touch = Math.pow(Math.max(.005, velocity), p.velocityCurve * (softPedal ? 1.5 : 1));
+    const bright = Math.min(1, p.brightness + velocity * .17);
+    const stiffness = p.bass ? .00002 : .000035 + .00027 * Math.pow(Math.max(0,midiNote-40)/88,2);
+    const strings = [];
+    for (let s = 0; s < 3; ++s) {
+      const detune = p.bass ? 0 : (s - 1) * (.35 + p.resonance * .65);
+      const stringFrequency = base * Math.pow(2, detune / 1200);
+      const modes = [];
+      for (let n = 1; n <= 14; ++n) {
+        const frequency = stringFrequency * n * Math.sqrt(1 + stiffness * n * n);
+        if (n > (p.bass ? 10 : 14) || frequency >= sampleRate * .45) continue;
+        const angle = 2 * Math.PI * frequency / sampleRate;
+        const phase = s * .12 + n * .017;
+        const strike = Math.abs(Math.sin(Math.PI * n * (p.bass ? .14 : .125)));
+        const spectral = Math.exp(-(n - 1) * (p.bass ? .42 : (.16 + (1-bright) * .34)));
+        const seconds = (p.bass ? 7 : 11) * (.35 + p.resonance * 1.15) / (1 + (n-1) * (p.bass ? .40 : .52));
+        modes.push({sine:Math.sin(phase),cosine:Math.cos(phase),stepSine:Math.sin(angle),stepCosine:Math.cos(angle),
+          gain:touch * strike * spectral / (n * (p.bass ? 2.8 : 2.2)),decay:Math.exp(-1 / (sampleRate * seconds))});
+      }
+      strings.push(modes);
+    }
+    voices.push({sourceNote,active:true,keyDown:true,heldByPedal:false,envelope:0,strings,level:p.level*(softPedal?.68:1),
+      width:p.width,attackStep:1-Math.exp(-1/(sampleRate*Math.max(.2,p.attack)*.001)),
+      releaseStep:Math.exp(-1/(sampleRate*Math.max(20,forceDry?Math.min(70,p.release):p.release)*.001)),
+      noiseEnvelope:(p.hardness*.006+.001)*velocity,noiseState:(0x9e3779b9 ^ (++voiceSerial * 747796405))|0});
+  }
+  function noteOn(note, velocity=.78) {
+    if (!context) startAudio();
+    startLayer(note, velocity, settings('a'));
+    startLayer(note, velocity, settings('b'));
+    highlight(note, true);
+  }
+  function pedalDown() { return !forceDry && (midiPedal || $('sustainHold').checked); }
+  function noteOff(note) {
+    for (const voice of voices) if (voice.sourceNote === note && voice.keyDown) { voice.keyDown=false; voice.heldByPedal=pedalDown(); }
+    highlight(note, false);
+  }
+  function releasePedal() { if (!pedalDown()) for (const v of voices) if (!v.keyDown) v.heldByPedal=false; }
+  function allNotesOff() { voices.length=0; midiPedal=false; softPedal=false; for(const key of board) key.classList.remove('down'); }
+  function highlight(note, on) { for (const key of board) if (Number(key.dataset.note) === note) key.classList.toggle('down',on); }
+  function drawKeyboard() {
+    const container = $('keys'); container.innerHTML=''; board=[];
+    const whiteOffsets=[0,2,4,5,7,9,11];
+    for (let octave=0; octave<2; ++octave) for (let k=0; k<7; ++k) {
+      const note=keyBase+octave*12+whiteOffsets[k];
+      const el=document.createElement('div'); el.className='white-key'; el.dataset.note=note;
+      if (k===0) el.textContent=noteName(note);
+      container.appendChild(el); board.push(el);
+    }
+    const blackPositions=[0,1,3,4,5];
+    const blackOffsets=[1,3,6,8,10];
+    for (let octave=0; octave<2; ++octave) for (let k=0; k<5; ++k) {
+      const note=keyBase+octave*12+blackOffsets[k];
+      const el=document.createElement('div'); el.className='black-key'; el.dataset.note=note;
+      const whiteIndex=octave*7+blackPositions[k];
+      el.style.left=`calc(${(whiteIndex+1)/14*100}% - 2.3%)`;
+      container.appendChild(el); board.push(el);
+    }
+    for (const key of board) {
+      key.addEventListener('pointerdown', e => { e.preventDefault(); container.focus(); key.setPointerCapture(e.pointerId); const n=Number(key.dataset.note); pointerNotes.set(e.pointerId,n); noteOn(n,e.pointerType==='touch'?.76:.82); });
+      const stop=e => { const n=pointerNotes.get(e.pointerId); if(n!==undefined){noteOff(n);pointerNotes.delete(e.pointerId);} };
+      key.addEventListener('pointerup',stop); key.addEventListener('pointercancel',stop);
+    }
+    $('octText').textContent=noteName(keyBase);
+  }
+  function refreshOutput(input) {
+    const output=input.closest('.control')?.querySelector('output'); if(!output)return;
+    let value=Number(input.value);
+    if(input.id==='split') output.textContent=`${noteName(value)} (${value})`;
+    else if(input.id.includes('Transpose')) output.textContent=`${value>0?'+':''}${value} st`;
+    else if(input.id.includes('Tune')) output.textContent=`${value>0?'+':''}${value.toFixed(1)} ct`;
+    else if(input.id.startsWith('eq') || input.id==='compThreshold'||input.id==='compMakeup') output.textContent=`${value>0?'+':''}${value.toFixed(1)} dB`;
+    else if(input.id.includes('Attack')||input.id.includes('Release')||input.id==='delayMs') output.textContent=`${value.toFixed(value<10?1:0)} ms`;
+    else if(input.id==='compRatio') output.textContent=`${value.toFixed(1)}:1`;
+    else output.textContent=value.toFixed(2);
+  }
+  for (const id of sliderIds) {
+    const input=$(id); refreshOutput(input);
+    input.addEventListener('input',()=>{refreshOutput(input);applyAudioControls();if(id==='reverbSize'||id==='reverbDamping')scheduleImpulse();});
+  }
+  const eqPresets={flat:[0,0,0,0],warm:[2.5,1.5,-1.5,-1],bright:[-1,-1,2,3],presence:[-2,.5,3,1.5],soft:[1,-1,-2,-3]};
+  const compPresets={off:[0,1,15,180,0],natural:[-22,1.8,25,250,2],pop:[-24,3,8,120,4],stage:[-28,4,4,180,5]};
+  const pianoPresets={concert:[.55,.5,.5,.16,2],warm:[.37,.35,.65,.23,4],pop:[.75,.65,.35,.1,1],ballad:[.43,.38,.72,.32,6]};
+  $('eqPreset').addEventListener('change',e=>{const p=eqPresets[e.target.value];if(p)['eqLow','eqLowMid','eqHighMid','eqHigh'].forEach((id,i)=>setParam(id,p[i]));});
+  $('compPreset').addEventListener('change',e=>{const p=compPresets[e.target.value];if(p)['compThreshold','compRatio','compAttack','compRelease','compMakeup'].forEach((id,i)=>setParam(id,p[i]));});
+  $('pianoPreset').addEventListener('change',e=>{const p=pianoPresets[e.target.value];if(p)['aBrightness','aHardness','aResonance','reverbMix','aAttack'].forEach((id,i)=>setParam(id,p[i]));});
+  $('sustainHold').addEventListener('change',releasePedal);
+  $('start').addEventListener('click',startAudio);
+  $('dryTest').addEventListener('click',()=>{
+    allNotesOff();
+    forceDry = !forceDry;
+    if (forceDry) {
+      previousHold = $('sustainHold').checked;
+      $('sustainHold').checked = false;
+      $('sustainHold').disabled = true;
+      $('dryTest').textContent = 'Restaurar sonido con efectos';
+      showStatus('Modo seco y sin pedal activo: piano directo, sin EQ, compresor, delay ni reverb. Al soltar una tecla el apagador actúa rápidamente.');
+    } else {
+      $('sustainHold').checked = previousHold;
+      $('sustainHold').disabled = false;
+      $('dryTest').textContent = 'Probar seco / sin pedal';
+      showStatus('Modo normal restaurado. Puedes comparar con sustain, reverb y delay.');
+    }
+    $('dryTest').setAttribute('aria-pressed', String(forceDry));
+    applyAudioControls();
+  });
+  $('panic').addEventListener('click',allNotesOff);
+  $('octDown').addEventListener('click',()=>{keyBase=Math.max(36,keyBase-12);drawKeyboard();});
+  $('octUp').addEventListener('click',()=>{keyBase=Math.min(84,keyBase+12);drawKeyboard();});
+  const typing='awsedftgyhujkolp';
+  document.addEventListener('keydown',e=>{
+    if(e.repeat || e.ctrlKey || e.altKey || e.metaKey || ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;
+    const offset=typing.indexOf(e.key.toLowerCase()); if(offset<0 || keyNotes.has(e.code))return;
+    e.preventDefault(); const note=keyBase+offset;keyNotes.set(e.code,note);noteOn(note);
+  });
+  document.addEventListener('keyup',e=>{const note=keyNotes.get(e.code);if(note!==undefined){noteOff(note);keyNotes.delete(e.code);}});
+  window.addEventListener('blur',()=>{for(const note of keyNotes.values())noteOff(note);keyNotes.clear();});
+  $('midi').addEventListener('click',async()=>{
+    if(!navigator.requestMIDIAccess){showStatus('Este navegador no ofrece Web MIDI. Puedes tocar con el ratón o las letras.');return;}
+    try {
+      midiAccess=await navigator.requestMIDIAccess({sysex:false});
+      const connect=()=>{for(const input of midiAccess.inputs.values())input.onmidimessage=event=>{
+        const [status,note,velocity]=event.data;const type=status&0xf0;
+        if(type===0x90&&velocity>0)noteOn(note,velocity/127);
+        else if(type===0x80||(type===0x90&&velocity===0))noteOff(note);
+        else if(type===0xb0){if(note===64){midiPedal=velocity>=64;releasePedal();}else if(note===67)softPedal=velocity>=64;else if(note===120||note===123)allNotesOff();}
+      };};
+      connect();midiAccess.onstatechange=connect;
+      const names=[...midiAccess.inputs.values()].map(x=>x.name).join(', ');
+      showStatus(names?`MIDI conectado: ${names}. Pulsa «Activar audio» si todavía no suena.`:'Web MIDI activo, pero no se detectó una entrada. Comprueba la conexión del controlador.');
+    }catch(error){showStatus('No se pudo obtener acceso MIDI desde este archivo/navegador. Usa el ratón o teclado; Chrome/Edge pueden exigir un contexto seguro para MIDI.');}
+  });
+  drawKeyboard();
+})();
+</script>
+</body>
+</html>

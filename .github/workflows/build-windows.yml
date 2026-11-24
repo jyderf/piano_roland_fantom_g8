@@ -1,0 +1,78 @@
+name: Compilar Aurea Piano para Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - v0.1.0
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Compilar Standalone y VST3 y ejecutar pruebas
+        shell: pwsh
+        run: .\build-windows.ps1 -Generator "Visual Studio 17 2022"
+
+      - name: Crear instalador
+        shell: pwsh
+        run: .\build-installer.ps1
+
+      - name: Comprobar productos
+        shell: pwsh
+        run: |
+          $files = @(
+            'build\AureaPiano_artefacts\Release\Standalone\Aurea Piano.exe',
+            'build\AureaPiano_artefacts\Release\VST3\Aurea Piano.vst3',
+            'dist\AureaPiano-0.1.0-win64-setup.exe'
+          )
+          foreach ($file in $files) {
+            if (-not (Test-Path -LiteralPath $file)) {
+              throw "No se generó $file"
+            }
+            Write-Host "Generado: $file"
+          }
+
+      - name: Publicar instalador como artefacto descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: AureaPiano-0.1.0-win64-setup
+          path: dist/AureaPiano-0.1.0-win64-setup.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    if: github.ref == 'refs/tags/v0.1.0'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar instalador comprobado
+        uses: actions/download-artifact@v4
+        with:
+          name: AureaPiano-0.1.0-win64-setup
+          path: dist
+
+      - name: Publicar versión preliminar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" dist/AureaPiano-0.1.0-win64-setup.exe --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/AureaPiano-0.1.0-win64-setup.exe \
+              --title "Aurea Piano 0.1.0 (versión preliminar)" \
+              --notes "Instalador Windows x64 con aplicación independiente y VST3. No incluye AAX para Pro Tools 12. Sonido y latencia pendientes de prueba en un equipo de usuario." \
+              --prerelease
+          fi

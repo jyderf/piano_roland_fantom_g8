@@ -1,0 +1,7 @@
+build/
+dist/
+release/signed/
+.vs/
+*.user
+*.suo
+AureaPiano-source.zip
