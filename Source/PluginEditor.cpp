@@ -27,7 +27,6 @@ AureaPianoEditor::AureaPianoEditor(AureaPianoProcessor& p)
 
     viewport.setViewedComponent(&content, false);
     viewport.setScrollBarsShown(true, false);
-    viewport.setColour(juce::Viewport::backgroundColourId, background);
     addAndMakeVisible(viewport);
     content.setSize(1060, 1150);
 
