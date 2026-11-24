@@ -1,6 +1,6 @@
 ; Build with build-installer.ps1 after the application and plug-in binaries exist.
 ; INCLUDE_AAX=1 is reserved for a separately signed AAX package.
-#define AppVersion "0.1.0"
+#define AppVersion "0.1.1"
 
 [Setup]
 AppId=AureaPiano

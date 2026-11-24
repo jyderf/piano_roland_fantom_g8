@@ -22,6 +22,41 @@ static float energy(piano::Model& model, int samples)
 
 int main()
 {
+    // A released key must stop; only the sustain pedal may hold it.
+    piano::Voice voice;
+    piano::LayerSettings damper;
+    damper.releaseMs = 80.0f;
+    voice.start(60, 60, 0, 0.8f, damper, 48000, 1, false);
+    for (int i = 0; i < 4800; ++i)
+    {
+        float l = 0, r = 0;
+        voice.tick(l, r);
+    }
+    require(voice.active);
+    voice.release(false);
+    for (int i = 0; i < 48000; ++i)
+    {
+        float l = 0, r = 0;
+        voice.tick(l, r);
+    }
+    require(! voice.active);
+
+    voice.start(60, 60, 0, 0.8f, damper, 48000, 2, false);
+    voice.release(true);
+    for (int i = 0; i < 48000; ++i)
+    {
+        float l = 0, r = 0;
+        voice.tick(l, r);
+    }
+    require(voice.active);
+    voice.pedalUp();
+    for (int i = 0; i < 48000; ++i)
+    {
+        float l = 0, r = 0;
+        voice.tick(l, r);
+    }
+    require(! voice.active);
+
     piano::Model model;
     model.prepare(48000);
     piano::LayerSettings main, dual;

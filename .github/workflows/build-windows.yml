@@ -6,7 +6,7 @@ on:
     branches:
       - main
     tags:
-      - v0.1.0
+      - v0.1.1
 
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
           $files = @(
             'build\AureaPiano_artefacts\Release\Standalone\Aurea Piano.exe',
             'build\AureaPiano_artefacts\Release\VST3\Aurea Piano.vst3',
-            'dist\AureaPiano-0.1.0-win64-setup.exe'
+            'dist\AureaPiano-0.1.1-win64-setup.exe'
           )
           foreach ($file in $files) {
             if (-not (Test-Path -LiteralPath $file)) {
@@ -45,13 +45,13 @@ jobs:
       - name: Publicar instalador como artefacto descargable
         uses: actions/upload-artifact@v4
         with:
-          name: AureaPiano-0.1.0-win64-setup
-          path: dist/AureaPiano-0.1.0-win64-setup.exe
+          name: AureaPiano-0.1.1-win64-setup
+          path: dist/AureaPiano-0.1.1-win64-setup.exe
           if-no-files-found: error
           retention-days: 30
 
   release:
-    if: github.ref == 'refs/tags/v0.1.0'
+    if: github.ref == 'refs/tags/v0.1.1'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -60,7 +60,7 @@ jobs:
       - name: Descargar instalador comprobado
         uses: actions/download-artifact@v4
         with:
-          name: AureaPiano-0.1.0-win64-setup
+          name: AureaPiano-0.1.1-win64-setup
           path: dist
 
       - name: Publicar versión preliminar
@@ -71,10 +71,10 @@ jobs:
         shell: bash
         run: |
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" dist/AureaPiano-0.1.0-win64-setup.exe --clobber
+            gh release upload "$RELEASE_TAG" dist/AureaPiano-0.1.1-win64-setup.exe --clobber
           else
-            gh release create "$RELEASE_TAG" dist/AureaPiano-0.1.0-win64-setup.exe \
-              --title "Aurea Piano 0.1.0 (versión preliminar)" \
-              --notes "Instalador Windows x64 con aplicación independiente y VST3. No incluye AAX para Pro Tools 12. Sonido y latencia pendientes de prueba en un equipo de usuario." \
+            gh release create "$RELEASE_TAG" dist/AureaPiano-0.1.1-win64-setup.exe \
+              --title "Aurea Piano 0.1.1 (versión preliminar)" \
+              --notes "Corrige la nota que quedaba sonando al soltar la tecla sin pedal. Ahora el pedal sostiene la nota hasta que se libera. Incluye aplicación independiente y VST3; no incluye AAX para Pro Tools 12." \
               --prerelease
           fi

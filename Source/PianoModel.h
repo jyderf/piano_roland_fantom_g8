@@ -20,7 +20,7 @@ struct LayerSettings
     float level = 0.8f;
     float brightness = 0.55f;
     float attackMs = 2.0f;
-    float releaseMs = 250.0f;
+    float releaseMs = 80.0f;
     float hardness = 0.5f;
     float resonance = 0.45f;
     float width = 0.55f;
@@ -129,8 +129,10 @@ struct Voice
     inline void tick(float& left, float& right) noexcept
     {
         if (! active) return;
-        envelope += (1.0f - envelope) * attackStep;
-        if (! keyDown && ! heldByPedal) envelope *= releaseStep;
+        if (keyDown || heldByPedal)
+            envelope += (1.0f - envelope) * attackStep;
+        else
+            envelope *= releaseStep;
 
         float stringOutput[3] = {};
         for (int s = 0; s < stringsPerVoice; ++s)

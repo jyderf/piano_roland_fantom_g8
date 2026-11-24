@@ -48,7 +48,7 @@ if ($WithAAX) {
 }
 if ($LASTEXITCODE -ne 0) { throw "Falló la creación del instalador." }
 
-$name = if ($WithAAX) { "AureaPiano-0.1.0-win64-protools-setup.exe" } else { "AureaPiano-0.1.0-win64-setup.exe" }
+$name = if ($WithAAX) { "AureaPiano-0.1.1-win64-protools-setup.exe" } else { "AureaPiano-0.1.1-win64-setup.exe" }
 $output = Join-Path $projectRoot "dist\$name"
 if (-not (Test-Path -LiteralPath $output -PathType Leaf)) {
     throw "Inno Setup terminó sin crear el archivo esperado: $output"

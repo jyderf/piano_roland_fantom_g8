@@ -31,7 +31,7 @@ APVTS::ParameterLayout AureaPianoProcessor::makeLayout()
         addFloat(p, (x + "Level").toRawUTF8(), (x + " Level").toRawUTF8(), 0, 1, secondary ? 0.65f : 0.8f);
         addFloat(p, (x + "Brightness").toRawUTF8(), (x + " Brightness").toRawUTF8(), 0, 1, secondary ? 0.45f : 0.55f);
         addFloat(p, (x + "Attack").toRawUTF8(), (x + " Attack ms").toRawUTF8(), 0.2f, 120, 2);
-        addFloat(p, (x + "Release").toRawUTF8(), (x + " Release ms").toRawUTF8(), 20, 1800, secondary ? 280 : 250, 1);
+        addFloat(p, (x + "Release").toRawUTF8(), (x + " Release ms").toRawUTF8(), 20, 1800, secondary ? 100 : 80, 1);
         addFloat(p, (x + "Hardness").toRawUTF8(), (x + " Hammer").toRawUTF8(), 0, 1, 0.5f);
         addFloat(p, (x + "Resonance").toRawUTF8(), (x + " Resonance").toRawUTF8(), 0, 1, 0.45f);
         addFloat(p, (x + "Width").toRawUTF8(), (x + " Stereo width").toRawUTF8(), 0, 1, 0.55f);

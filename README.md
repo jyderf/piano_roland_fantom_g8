@@ -41,6 +41,9 @@ ajusta la señal directa y puede mezclarse con efectos.
 - Volumen, brillo, ataque, liberación, dureza del martillo, resonancia y
   anchura estéreo por capa.
 - Sustain mediante pedal MIDI CC64 o interruptor en pantalla; pedal suave CC67.
+- Al soltar una tecla sin pedal, el apagador reduce la nota; con CC64 presionado,
+  la nota continúa hasta soltar el pedal. La liberación inicial es de 80 ms en
+  el piano principal y 100 ms en la capa dual, ajustable en la interfaz.
 - EQ paramétrico de 4 bandas con presets; compresor con umbral, relación,
   ataque, liberación, ganancia y presets.
 - Señal seca, delay estéreo, reverb, volumen maestro y limitación suave.
@@ -66,9 +69,9 @@ El flujo [`.github/workflows/build-windows.yml`](.github/workflows/build-windows
 usa un equipo Windows de GitHub Actions con Visual Studio 2026, CMake e Inno
 Setup. En el repositorio de GitHub, abre **Actions > Compilar Aurea Piano para
 Windows > Run workflow**. Si la compilación y las pruebas terminan bien, descarga
-el archivo `AureaPiano-0.1.0-win64-setup` desde **Artifacts**; dentro estará el
+el archivo `AureaPiano-0.1.1-win64-setup` desde **Artifacts**; dentro estará el
 instalador `.exe`. Los artefactos se conservan 30 días y pueden requerir iniciar
-sesión en GitHub. Si se publica la etiqueta `v0.1.0`, el flujo también crea una
+sesión en GitHub. Si se publica la etiqueta `v0.1.1`, el flujo también crea una
 versión preliminar en **Releases** con descarga directa del instalador. El
 instalador contiene Standalone y VST3; no incluye AAX.
 
@@ -129,7 +132,7 @@ y conviene probar su versión de evaluación con Pro Tools 12 antes de comprarlo
 Esta sección es **para quien fabrica el producto**, no para el usuario final.
 Tras compilar y probar `Standalone` y `VST3`, instala Inno Setup 7 y ejecuta
 `.\build-installer.ps1`. Se generará
-`dist/AureaPiano-0.1.0-win64-setup.exe`, que instala la aplicación y,
+`dist/AureaPiano-0.1.1-win64-setup.exe`, que instala la aplicación y,
 opcionalmente, el VST3 para el usuario actual sin permisos de administrador.
 El usuario final solo necesita ejecutar ese `.exe`.
 
